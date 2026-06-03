@@ -1,0 +1,49 @@
+# --- Python venv + cache ---
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# --- C++/CMake build vystupy (regenerovatelne pres cmake) ---
+build/
+unilidar_sdk2/unitree_lidar_sdk/bin/
+*.o
+*.so
+
+# --- Vygenerovana data a vystupy (mapy, mracna, snimky, datasety) ---
+*.pcd
+*.png
+*.csv
+*.mcap
+*.bin
+seq/
+glim_seq/
+glim_dump/
+glim_sample/
+
+# --- Autorsky chraneny manual vyrobce -> NEpublikovat ---
+*.pdf
+
+# --- Pripadna tajemstvi / lokalni konfigurace ---
+.env
+.env.*
+*.pem
+*.key
+id_rsa
+id_ed25519
+.netrc
+.git-credentials
+
+# --- Zalohy / docasne ---
+old/
+orig-backup-*/
+*.bak
+
+# --- Interni handoff dokumenty (drzet lokalne, NE na verejny GitHub) ---
+HANDOFF.md
+CLAUDE.md
+
+# --- Vendorovany Unitree SDK: cele NEpublikovat (viz README: git clone + sdk-overlay/) ---
+unilidar_sdk2/
+
+# Pozn.: obrazek do README pridas cilene:  git add -f docs/screenshot.png
