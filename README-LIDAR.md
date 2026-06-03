@@ -1,4 +1,10 @@
-# Unitree 4D LiDAR L2 — zprovoznění
+# Unitree 4D LiDAR L2 — zprovoznění (technické poznámky)
+
+> **Hlavní návod (instalace, použití, řešení problémů) je v [README.md](README.md).**
+> Tento soubor je doplňková technická reference. K přenositelnosti: skripty berou
+> síťové rozhraní z `LIDAR_IFACE` (default `eno1`) a port z `LIDAR_PORT`
+> (default `/dev/ttyACM0`); C++ SDK se kompiluje lokálně (viz README, krok 3);
+> sériový port vyžaduje členství ve skupině `dialout`.
 
 Stav: **funkční přes ethernet** (ověřeno — point cloud + IMU teče). USB/serial připraveno (vyžaduje jednorázové přepnutí + restart LiDARu).
 
