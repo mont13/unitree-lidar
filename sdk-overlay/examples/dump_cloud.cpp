@@ -9,6 +9,8 @@
 #include <array>
 #include <vector>
 #include <fstream>
+#include <exception>
+#include <string>
 
 int main(int argc, char *argv[])
 {
@@ -17,9 +19,18 @@ int main(int argc, char *argv[])
     const char *pcdPath = (argc > 3) ? argv[3] : "lidar_cloud.pcd";
 
     UnitreeLidarReader *lr = createUnitreeLidarReader();
-    if (lr->initializeSerial("/dev/ttyACM0", 4000000))
+    const char* port_env = getenv("LIDAR_PORT");
+    std::string port = (port_env && *port_env) ? port_env : "/dev/ttyACM0";
+    int bad = 0;
+    try {
+        bad = lr->initializeSerial(port, 4000000);
+    } catch (const std::exception &e) {
+        fprintf(stderr, "Serial init SELHAL na %s: %s\n", port.c_str(), e.what());
+        return 1;
+    }
+    if (bad)
     {
-        printf("Serial init SELHAL na /dev/ttyACM0!\n");
+        printf("Serial init SELHAL na %s!\n", port.c_str());
         return 1;
     }
     printf("Serial OK, sbiram %d snimku ...\n", nFrames);

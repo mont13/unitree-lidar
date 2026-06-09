@@ -46,7 +46,7 @@ cmake -S unilidar_sdk2/unitree_lidar_sdk -B unilidar_sdk2/unitree_lidar_sdk/buil
 cmake --build unilidar_sdk2/unitree_lidar_sdk/build -j
 ```
 Overlay přidá nástroje `read_udp`, `read_serial`, `stream_cloud`, `dump_cloud`,
-`lidar_motor`, `record_seq`, `record_glim`, `scan_cloud` (čisté ukončení bez resetu LiDARu).
+`lidar_motor`, `record_seq`, `record_glim`, `scan_cloud` a zrebuildí i `set_to_serial_mode` / `set_to_udp_mode` pro přepínání `workMode` (čisté ukončení bez resetu LiDARu).
 
 > ⚠️ **Vždy kompiluj lokálně.** Předkompilované binárky z jiného stroje mohou selhat
 > na `GLIBCXX_... not found` (jiná verze GCC/libstdc++). Viz [Řešení problémů](#-řešení-problémů).
@@ -92,9 +92,13 @@ LiDAR posílá data **vždy jen jedním kanálem** — ethernet **nebo** serial:
 |---|---|
 | `./start-usb.sh` | živé čtení přes USB/serial |
 | `./live-usb.sh` | živý 3D náhled (Open3D) přes USB |
-| `./lidar-quiet.sh` / `./lidar-wake.sh` | standby (zastaví rotaci, ~1 W) / probuzení motoru |
+| `./lidar-quiet.sh [auto\|serial\|udp]` / `./lidar-wake.sh [auto\|serial\|udp]` | standby / probuzení; default `auto` zkusí serial a pak ethernet/UDP |
 | `./ETHERNET/test_start_stop_10s.sh` | low-level Ethernet start → čekat → standby test pro debug timeoutů/ACK |
 | `./SERIAL/test_usb_start_stop_10s.sh` | low-level USB start → čekat → standby test s ACK_SUCCESS |
+| `./scan_serial_direct.py` | přímý USB scan do PCD/PNG bez C++ SDK parseru |
+| `./record_serial_sequence_direct.py` | přímý USB recorder krátkých PCD framů pro lidar-only SLAM |
+| `./merge_scans_simple.py` / `./merge_three_known_poses.py` | jednoduché offline spojování statických scanů bez Open3D |
+| `./continuous_map_simple.py` | fallback složení pohybové sekvence bez Open3D/KISS-ICP |
 | `bin/.../record_seq N serial seq` | nahraje N snímků pro SLAM |
 | `.venv/bin/python3 slam_map.py <složka_pcd> <out.pcd>` | KISS-ICP slepí snímky do 3D mapy |
 | `.venv/bin/python3 render_pcd.py <in.pcd> [out.png]` | bezdisplejový render mračna do PNG |
@@ -103,10 +107,23 @@ LiDAR posílá data **vždy jen jedním kanálem** — ethernet **nebo** serial:
 | `.venv/bin/python3 make_rosbag.py <glim_seq>` | export do ROS2 bagu (MCAP) pro GLIM |
 
 ### Proměnné prostředí
-- `LIDAR_PORT` — sériový port (default `/dev/ttyACM0`).
+- `LIDAR_PORT` — sériový port (default `/dev/ttyACM0`). Když není nastavený, USB wrappery zkusí první dostupný `/dev/ttyACM*` nebo `/dev/ttyUSB*`.
 - `LIDAR_IFACE` — síťové rozhraní pro ethernet režim (default `eno1`).
 
 ---
+
+## Experimentální / fallback nástroje
+
+Další pracovní nástroje převzaté z `jaroslidar/` najdeš přímo v kořeni repa a v [`measurements/`](measurements/):
+
+- `scan_serial_direct.py` — přímé čtení USB/serial point dat bez C++ SDK parseru.
+- `record_serial_sequence_direct.py` — přímý záznam krátkých PCD framů pro `slam_map.py`.
+- `merge_scans_simple.py`, `merge_three_known_poses.py` — jednoduché spojování statických scanů a kontrola více pozic LiDARu.
+- `continuous_map_simple.py` — nouzový 2D ICP fallback, když chybí Open3D/KISS-ICP.
+- `switch_to_serial.py` — raw UDP fallback pro ENET→serial přepnutí bez SDK wrapperu.
+- `measurements/` — pracovní poznámky, postupy a wrappery pro `continuous_movement/`.
+
+Výstupy těchto nástrojů míří typicky do `scans/` a `measurements/continuous_movement/`.
 
 ## Vizualizace
 - **S displejem:** `./view.sh mapa.pcd` (Open3D okno; myš = otáčení, kolečko = zoom, Q = konec). Živě: `./live-usb.sh`.
@@ -141,7 +158,7 @@ preferuj USB/serial režim.** Pro jiný NIC: `LIDAR_IFACE=<nic> ./start.sh`.
 | Open3D okno se neotevře / je prázdné | Chybí `DISPLAY` nebo GL. Zkontroluj `echo $DISPLAY`. Bez displeje použij **`render_pcd.py`** (headless → PNG). |
 | Po ethernet skriptu spadne síť/internet stroje | Ethernet režim mění IP na NIC. Na stroji s jednou síťovkou **nepoužívej** — preferuj USB. Pro jiný NIC `LIDAR_IFACE=<nic>`. |
 | LiDAR se nehlásí / `/dev/ttyACM0` chybí | LiDAR musí mít **DC napájení** (USB ho nenapájí). Ověř `lsusb` (čip WCH/QinHeng) a `ls /dev/ttyACM*`. |
-| LiDAR hučí / točí se a nečteš ho | `./lidar-quiet.sh` (motor stop, standby). Probuzení `./lidar-wake.sh`. |
+| LiDAR hučí / točí se a nečteš ho | `./lidar-quiet.sh` (motor stop, standby). Probuzení `./lidar-wake.sh`. Pokud je LiDAR v ENET režimu, použij `./lidar-quiet.sh udp` nebo nastav `LIDAR_IFACE=<nic>`. |
 | `No ACK/data frame seen after command` při low-level UDP testu | Projdi [`SETUP.md`](SETUP.md) a [`ETHERNET/README.md`](ETHERNET/README.md). U tohoto kusu ACK nemusí přijít zpět, takže rozhoduje fyzický start/stop motoru; zkontroluj IP `192.168.1.2/24` a port `6201`. |
 | `ACK_CRC_ERROR` v low-level USB debug skriptu | Správně je `CRC(payload only)`, ne `CRC(header + payload)`. Viz [`SERIAL/README.md`](SERIAL/README.md). |
 | Přepnutí ENET↔serial se neprojeví | Po `switch-to-*.sh` je nutný **power-cycle** LiDARu (vypnout/zapnout DC). |
@@ -150,7 +167,7 @@ preferuj USB/serial režim.** Pro jiný NIC: `LIDAR_IFACE=<nic> ./start.sh`.
 ---
 
 ## Licence
-- Vlastní kód v kořeni repa a ve složkách `ETHERNET/`, `SERIAL/`, `sdk-overlay/` — **MIT** (viz [LICENSE](LICENSE)).
+- Vlastní kód v kořeni repa a ve složkách `ETHERNET/`, `SERIAL/`, `measurements/`, `sdk-overlay/` — **MIT** (viz [LICENSE](LICENSE)).
   Soubory v `sdk-overlay/examples/` vycházejí z příkladů Unitree SDK (BSD-3-Clause).
 - **unilidar_sdk2** (klonuje se zvlášť) — BSD-3-Clause, © 2024 Unitree Robotics.
 - Manuál výrobce (PDF) není součástí repa kvůli autorským právům — stáhni z oficiálních stránek Unitree.

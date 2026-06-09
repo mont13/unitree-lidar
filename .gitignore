@@ -46,4 +46,13 @@ CLAUDE.md
 # --- Vendorovany Unitree SDK: cele NEpublikovat (viz README: git clone + sdk-overlay/) ---
 unilidar_sdk2/
 
+
+# --- Vystupy experimentalnich direct/fallback nastroju ---
+scans/*.txt
+scans/.last*
+measurements/continuous_movement/scans/*
+!measurements/continuous_movement/scans/README.md
+measurements/continuous_movement/results/*
+!measurements/continuous_movement/results/README.md
+
 # Pozn.: obrazek do README pridas cilene:  git add -f docs/screenshot.png

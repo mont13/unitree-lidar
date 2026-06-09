@@ -14,6 +14,7 @@
 #include <string>
 #include <cstdio>
 #include <sys/stat.h>
+#include <exception>
 
 int main(int argc, char *argv[])
 {
@@ -25,9 +26,17 @@ int main(int argc, char *argv[])
     mkdir(cdir.c_str(), 0755);
 
     UnitreeLidarReader *lr = createUnitreeLidarReader();
-    int bad = (mode == "udp") ? lr->initializeUDP(6101, "192.168.1.62", 6201, "192.168.1.2")
-                              : lr->initializeSerial("/dev/ttyACM0", 4000000);
-    if (bad) { printf("init SELHAL (%s)\n", mode.c_str()); return 1; }
+    const char* port_env = getenv("LIDAR_PORT");
+    std::string port = (port_env && *port_env) ? port_env : "/dev/ttyACM0";
+    int bad = 0;
+    try {
+        bad = (mode == "udp") ? lr->initializeUDP(6101, "192.168.1.62", 6201, "192.168.1.2")
+                              : lr->initializeSerial(port, 4000000);
+    } catch (const std::exception &e) {
+        fprintf(stderr, "init SELHAL (%s): %s\n", mode.c_str(), e.what());
+        return 1;
+    }
+    if (bad) { printf("init SELHAL (%s%s%s)\n", mode.c_str(), mode == "udp" ? "" : " na ", mode == "udp" ? "" : port.c_str()); return 1; }
     printf("GLIM zaznam: %d snimku + IMU (%s) - pomalu a plynule ...\n", nFrames, mode.c_str());
 
     std::ofstream imu(dir + "/imu.csv");

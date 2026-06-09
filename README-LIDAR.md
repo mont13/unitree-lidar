@@ -3,7 +3,7 @@
 > **Hlavní návod (instalace, použití, řešení problémů) je v [README.md](README.md).**
 > Tento soubor je doplňková technická reference. K přenositelnosti: skripty berou
 > síťové rozhraní z `LIDAR_IFACE` (default `eno1`) a port z `LIDAR_PORT`
-> (default `/dev/ttyACM0`); C++ SDK se kompiluje lokálně (viz README, krok 3);
+> (default `/dev/ttyACM0`, USB wrappery bez něj zkusí první `/dev/ttyACM*`/`/dev/ttyUSB*`); C++ SDK se kompiluje lokálně (viz README, krok 3);
 > sériový port vyžaduje členství ve skupině `dialout`.
 
 Stav: **funkční přes ethernet** (ověřeno — point cloud + IMU teče). USB/serial připraveno (vyžaduje jednorázové přepnutí + restart LiDARu).
@@ -34,12 +34,13 @@ LiDAR posílá data **vždy jen jedním kanálem** — ENET **nebo** serial, ne 
 | `./start.sh` | **Ethernet**: nastaví IP na eno1 + živě čte point cloud + IMU |
 | `./stop.sh` | Ukončí čtení + **vrátí síť do původního stavu** (odebere IP z eno1) |
 | `./switch-to-serial.sh` | Přepne LiDAR ENET→serial (přes UDP). Pak **power-cycle** + `./start-usb.sh` |
-| `./start-usb.sh` | **USB/serial**: živě čte z `/dev/ttyACM0` |
+| `./start-usb.sh` | **USB/serial**: živě čte z `LIDAR_PORT` nebo z prvního `/dev/ttyACM*` / `/dev/ttyUSB*` |
+| `./switch-to-serial-wifi.sh` | alternativní ENET→serial přepnutí, když je LiDAR za routerem / po Wi‑Fi |
 | `./switch-to-ethernet.sh` | Přepne LiDAR serial→ENET (přes serial). Pak **power-cycle** + `./start.sh` |
 | `./setup-temp-sudo.sh` | (root) dočasné bezheslové sudo na 4 h (kvůli `ip addr`) |
 | `./remove-temp-sudo.sh` | (root) okamžité zrušení dočasného sudo |
 
-Low-level start/standby debug mimo SDK stream najdeš ve složkách `ETHERNET/` a `SERIAL/`.
+Low-level start/standby debug mimo SDK stream najdeš ve složkách `ETHERNET/` a `SERIAL/`. Experimentální direct/fallback nástroje a měřicí poznámky jsou v `measurements/` a v kořeni repa (`scan_serial_direct.py`, `merge_scans_simple.py`, `continuous_map_simple.py`, `switch_to_serial.py`, ...).
 
 ## Rychlý start — ethernet
 ```bash
@@ -51,7 +52,7 @@ Low-level start/standby debug mimo SDK stream najdeš ve složkách `ETHERNET/` 
 ```bash
 ./switch-to-serial.sh   # přes ethernet pošle příkaz
 #   --> VYPNI A ZAPNI NAPÁJENÍ LiDARu <--
-./start-usb.sh          # čtení přes /dev/ttyACM0
+./start-usb.sh          # čtení přes LIDAR_PORT / první ttyACM*/ttyUSB*
 ```
 Zpět na ethernet: `./switch-to-ethernet.sh` → power-cycle → `./start.sh`.
 

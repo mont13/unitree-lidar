@@ -10,6 +10,8 @@
 #include <csignal>
 #include <cstdlib>
 #include <unistd.h>
+#include <exception>
+#include <string>
 
 static volatile sig_atomic_t g_run = 1;
 static void onSig(int) { g_run = 0; }
@@ -22,10 +24,18 @@ int main(int argc, char *argv[])
 
     UnitreeLidarReader *lr = createUnitreeLidarReader();
 
-    std::string port = "/dev/ttyACM0";
+    const char* port_env = getenv("LIDAR_PORT");
+    std::string port = (port_env && *port_env) ? port_env : "/dev/ttyACM0";
     uint32_t baudrate = 4000000;
 
-    if (lr->initializeSerial(port, baudrate))
+    int bad = 0;
+    try {
+        bad = lr->initializeSerial(port, baudrate);
+    } catch (const std::exception &e) {
+        fprintf(stderr, "Serial init SELHAL na %s: %s\n", port.c_str(), e.what());
+        return 1;
+    }
+    if (bad)
     {
         printf("Serial init SELHAL na %s! (je LiDAR v serial rezimu a port spravny?)\n", port.c_str());
         return 1;

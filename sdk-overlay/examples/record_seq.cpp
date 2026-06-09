@@ -12,6 +12,7 @@
 #include <string>
 #include <cstdio>
 #include <sys/stat.h>
+#include <exception>
 
 static void writePcdBin(const std::string &path, const std::vector<float> &xyz)
 {
@@ -30,9 +31,17 @@ int main(int argc, char *argv[])
     mkdir(dir.c_str(), 0755);
 
     UnitreeLidarReader *lr = createUnitreeLidarReader();
-    int bad = (mode == "udp") ? lr->initializeUDP(6101, "192.168.1.62", 6201, "192.168.1.2")
-                              : lr->initializeSerial("/dev/ttyACM0", 4000000);
-    if (bad) { printf("init SELHAL (%s)\n", mode.c_str()); return 1; }
+    const char* port_env = getenv("LIDAR_PORT");
+    std::string port = (port_env && *port_env) ? port_env : "/dev/ttyACM0";
+    int bad = 0;
+    try {
+        bad = (mode == "udp") ? lr->initializeUDP(6101, "192.168.1.62", 6201, "192.168.1.2")
+                              : lr->initializeSerial(port, 4000000);
+    } catch (const std::exception &e) {
+        fprintf(stderr, "init SELHAL (%s): %s\n", mode.c_str(), e.what());
+        return 1;
+    }
+    if (bad) { printf("init SELHAL (%s%s%s)\n", mode.c_str(), mode == "udp" ? "" : " na ", mode == "udp" ? "" : port.c_str()); return 1; }
     printf("Nahravam %d snimku do %s (%s) - pomalu a plynule pohybuj ...\n", nFrames, dir.c_str(), mode.c_str());
 
     PointCloudUnitree c;
