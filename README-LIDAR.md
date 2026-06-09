@@ -8,6 +8,8 @@
 
 Stav: **funkční přes ethernet** (ověřeno — point cloud + IMU teče). USB/serial připraveno (vyžaduje jednorázové přepnutí + restart LiDARu).
 
+První checklist po připojení a low-level debug timeoutů/ACK je v [`SETUP.md`](SETUP.md), detailní runbooky pak v [`ETHERNET/README.md`](ETHERNET/README.md) a [`SERIAL/README.md`](SERIAL/README.md).
+
 ## Hardware / připojení
 - Zařízení: **Unitree 4D LiDAR L2** (firmware 2.8.11.1, hardware 2.2.1.1)
 - Napájení: z přibaleného DC adaptéru (USB ani serial LiDAR **nenapájí**)
@@ -36,6 +38,8 @@ LiDAR posílá data **vždy jen jedním kanálem** — ENET **nebo** serial, ne 
 | `./switch-to-ethernet.sh` | Přepne LiDAR serial→ENET (přes serial). Pak **power-cycle** + `./start.sh` |
 | `./setup-temp-sudo.sh` | (root) dočasné bezheslové sudo na 4 h (kvůli `ip addr`) |
 | `./remove-temp-sudo.sh` | (root) okamžité zrušení dočasného sudo |
+
+Low-level start/standby debug mimo SDK stream najdeš ve složkách `ETHERNET/` a `SERIAL/`.
 
 ## Rychlý start — ethernet
 ```bash
